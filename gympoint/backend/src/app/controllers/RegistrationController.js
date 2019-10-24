@@ -4,6 +4,8 @@ import { parseISO, endOfDay, addMonths, isBefore } from 'date-fns';
 import Student from '../models/Student';
 import Plan from '../models/Plan';
 import Registration from '../models/Registration';
+import Queue from '../../lib/Queue';
+import RegistrationMail from '../jobs/RegistrationMail';
 
 class RegistrationController {
   async index(req, res) {
@@ -47,7 +49,7 @@ class RegistrationController {
     /**
      * Check if the student exists
      */
-    const studentExists = await Student.findOne({ where: { id: student_id } });
+    const studentExists = await Student.findByPk(student_id);
 
     if (!studentExists) {
       return res.status(400).json({ error: 'Student does not exist' });
@@ -56,7 +58,7 @@ class RegistrationController {
     /**
      * Check if the plan exists
      */
-    const planExists = await Plan.findOne({ where: { id: plan_id } });
+    const planExists = await Plan.findByPk(plan_id);
 
     if (!planExists) {
       return res.status(400).json({ error: 'Plan does not exist' });
@@ -90,6 +92,13 @@ class RegistrationController {
       start_date,
       end_date: endDate,
       price: planPrice,
+    });
+
+    await Queue.add(RegistrationMail.key, {
+      studentExists,
+      planExists,
+      endDate,
+      planPrice,
     });
 
     return res.json(registration);
