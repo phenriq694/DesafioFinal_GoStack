@@ -67,18 +67,10 @@ class RegistrationController {
     /**
      * Check if the start date is not earlier than the current date.
      */
-    const startDate = endOfDay(parseISO(start_date));
+    const startDate = parseISO(start_date);
     const currentDate = new Date();
 
-    /**
-     * Adding 86399 to startDate because it returns, in timestamp, 'the date'
-     * plus 00:00:00 hours.
-     * 86399 equals 23:59:59 hours in timestamp, and when it is add to startDate,
-     * this time is passed to this variable. This avoids problem checking if the
-     * date is earlier than the current date, as the comparison uses two values
-     * in timestamp.
-     */
-    if (isBefore(startDate, currentDate)) {
+    if (isBefore(endOfDay(startDate), currentDate)) {
       return res.status(400).json({ error: 'Date is not valid' });
     }
 
@@ -100,6 +92,76 @@ class RegistrationController {
       endDate,
       planPrice,
     });
+
+    return res.json(registration);
+  }
+
+  async update(req, res) {
+    const schema = Yup.object().shape({
+      plan_id: Yup.number(),
+      start_date: Yup.date().required(),
+    });
+
+    if (!(await schema.isValid(req.body))) {
+      return res.status(400).json({ error: 'Validation fails' });
+    }
+
+    /**
+     * Check if the registration exists
+     */
+    const registration = await Registration.findByPk(
+      req.params.registration_id
+    );
+
+    if (!registration) {
+      return res.status(400).json({ error: 'Registration does not exist' });
+    }
+
+    const { plan_id, start_date } = req.body;
+
+    /**
+     * Check if the plan exists
+     */
+    const planExists = await Plan.findByPk(plan_id || registration.plan_id);
+
+    if (!planExists) {
+      return res.status(400).json({ error: 'Plan does not exist' });
+    }
+
+    /**
+     * Check if the start date is not earlier than the current date.
+     */
+    const startDate = parseISO(start_date);
+    const currentDate = new Date();
+
+    if (isBefore(endOfDay(startDate), currentDate)) {
+      return res.status(400).json({ error: 'Date is not valid' });
+    }
+
+    const endDate = addMonths(startDate, planExists.duration);
+
+    const planPrice = planExists.duration * planExists.price;
+
+    await registration.update({
+      plan_id,
+      start_date,
+      end_date: endDate,
+      price: planPrice,
+    });
+
+    return res.json(registration);
+  }
+
+  async delete(req, res) {
+    const registration = await Registration.findByPk(
+      req.params.registration_id
+    );
+
+    if (!registration) {
+      return res.status(400).json({ error: 'Registration cannot be found' });
+    }
+
+    await registration.destroy();
 
     return res.json(registration);
   }
