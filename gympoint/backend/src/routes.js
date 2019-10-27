@@ -31,6 +31,7 @@ routes.post('/registrations', RegistrationController.store);
 routes.put('/registrations/:registration_id', RegistrationController.update);
 routes.delete('/registrations/:registration_id', RegistrationController.delete);
 
+routes.get('/students/:student_id/checkins', CheckinController.index);
 routes.post('/students/:student_id/checkins', CheckinController.store);
 
 export default routes;
