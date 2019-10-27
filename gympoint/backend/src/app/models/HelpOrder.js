@@ -1,10 +1,13 @@
 import Sequelize, { Model } from 'sequelize';
 
-class Checkin extends Model {
+class HelpOrder extends Model {
   static init(sequelize) {
     super.init(
       {
         student_id: Sequelize.INTEGER,
+        question: Sequelize.TEXT,
+        answer: Sequelize.TEXT,
+        answer_at: Sequelize.DATE,
       },
       {
         sequelize,
@@ -19,4 +22,4 @@ class Checkin extends Model {
   }
 }
 
-export default Checkin;
+export default HelpOrder;
